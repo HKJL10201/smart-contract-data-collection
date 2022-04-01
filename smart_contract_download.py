@@ -3,7 +3,8 @@ import csv
 
 PATH = 'contracts'
 
-classes=['auction','trading','wallet','lottery','dice','voting']
+classes = ['auction', 'trading', 'wallet', 'lottery', 'dice', 'voting']
+
 
 def get_links(file):
     res = []
@@ -19,10 +20,11 @@ def download(links, path='contracts'):
     if not os.path.exists(path):
         os.makedirs(path)
     print('start cloning...')
+    n = len(str(len(links)))
     idx = 1
     for link in links:
-        folder = '%03d' % idx
-        print('\r%s'%folder,end='')
+        folder = ('{:0>'+str(n)+'d}').format(idx)
+        print('\r%s' % folder, end='')
         os.system('cd ' + path+' && mkdir '+folder+' && cd '+folder +
                   ' && git clone '+link.strip())
         idx += 1
@@ -33,8 +35,9 @@ def main():
     global classes, PATH
     for c in classes:
         print('>>>>>>>>>>>>'+c)
-        fn='dapp_'+c+'.csv'
-        path=PATH+'/'+c
+        fn = 'dapp_'+c+'.csv'
+        path = PATH+'/'+c
         download(get_links(fn), path)
+
 
 main()

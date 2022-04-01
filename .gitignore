@@ -16,5 +16,6 @@ __pycache__
 contracts
 
 # additional
+bak
 *.html
 test.py
