@@ -1,0 +1,2 @@
+contract ERC20Token{
+}

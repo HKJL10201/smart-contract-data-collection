@@ -1,9 +1,10 @@
-import csv
+# import csv
 import requests
-from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
 import time
+import json
 
-KEY1 = 'smart+contract'
+KEY1 = 'smart%20contract'
 KEY2 = 'dapp'
 KEY = [KEY1, KEY2]
 
@@ -17,106 +18,88 @@ def req(url):
     # create Request with header
     req = requests.get(url, headers=header)
     html = req.text
-    soup = BeautifulSoup(html, 'html.parser')
-    return soup
+    return html
+    # soup = BeautifulSoup(html, 'html.parser')
+    # return soup
 
 
-def get_sum(category):
-    global KEY
-    max_sum = 0
-    max_k = ''
-    tm = 0
-    for k in KEY:
-        url = 'https://github.com/search?q=%s+%s' % (k, category)
-        soup = req(url)
-        while soup.find('title').string == 'Rate limit · GitHub':
-            tm += 10
-            time.sleep(tm)
-            soup = req(url)
-        h3 = soup.find_all('h3')
-        for h in h3:
-            s = h.string.strip()
-            if s.endswith('repository results'):
-                n = int(s.split()[0].replace(',', ''))
-                if n > max_sum:
-                    max_sum = n
-                    max_k = k
-                break
-        time.sleep(tm)
-    return max_sum, max_k
+def get_url(key, category, page=1):
+    url = 'https://github.com/search?q=%s%%20%s&type=repositories&p=%d' % (
+        key, category, page)
+    return url
 
-
-def reptile(category, page=1, idx=0, tm=10):
-    max_idx, key = get_sum(category)
-    if max_idx == None:
-        max_idx = 100
-    else:
-        print('%d %s %s repository results found' % (max_idx, category, key))
-
-    scale = 50
-
-    writer = csv.writer(open('dapp_'+category+'.csv', 'w',
-                        newline='', encoding='utf-8'))
-
-    print("START".center(scale, "-"))
-    start = time.perf_counter()
-    url = 'https://github.com/search?p=%d&q=%s+%s&type=Repositories' % (
-        page, key, category)
-
-    # while idx <= max_idx:
+def get_json(url, tm=10):
     while True:
-        i = int(idx/max_idx*scale)
-        a = "*" * i
-        b = "." * (scale - i)
-        c = (i / scale) * 100
+        try:
+            html = req(url)
+            js=json.loads(html)
+            return js
+        except:
+            time.sleep(tm)
+            tm+=10
+
+def reptile(key, category, page=1):
+    def result_handler(payload:list)->list:
+        '''
+        return the names of repositories
+        '''
+        results=payload['results']
+        return [r['hl_name'] for r in results]
+    
+    def result_writer(writer,results:list):
+        writer.write('\n'.join(results).replace('<em>','').replace('</em>','')+'\n')
+    
+    url = get_url(key, category, page)
+    dic = get_json(url)
+
+    payload = dic['payload']
+    page_count = payload['page_count']
+    result_count = payload['result_count']
+    print('%d %s %s repository results found' % (result_count, category, key))
+
+    if result_count==0:
+        return
+
+    writer = open(key+'_'+category+'.log', 'w', encoding='utf-8')
+    repo_names=result_handler(payload)
+    result_writer(writer,repo_names)
+
+    start = time.perf_counter()
+    while page<page_count:
         dur = time.perf_counter() - start
-        print("\r{:^3.0f}%[{}->{}]{:.2f}s".format(c, a, b, dur), end="")
+        print("\r[{}/{}]{:.2f}s".format(page, page_count, dur), end="")
+        
+        page += 1
+        url = get_url(key, category, page)
+        dic = get_json(url)
 
-        soup = req(url)
-
-        if soup.find('title').string == 'Rate limit · GitHub':    # Rate limit
-            print(
-                "\r{:^3.0f}%[{}->{}]{:.2f}s (waiting)".format(c, a, b, dur), end="")
-            # print('waiting...')
-            time.sleep(30+tm)
-            tm += 10
-            continue
-
-        links = soup.find_all('a', class_='v-align-middle')
-
-        # writer.writerow([page,max_page])
-
-        if links == None:
+        payload = dic['payload']
+        repo_names=result_handler(payload)
+        if len(repo_names)==0:
             break
+        result_writer(writer,repo_names)
 
-        for link in links:
-            name = link['href'][1:]
-            dapp_url = 'https://github.com/'+name
-            writer.writerow([name, dapp_url])
-            idx += 1
-
-        next_page = soup.find('a', class_='next_page')
-        if next_page == None:
-            # print(soup)
-            break
-        else:
-            url = 'https://github.com/'+next_page['href']
-        time.sleep(tm)
-    print("\n"+"END".center(scale, "-"))
-    # print("\n"+"done")
+        # time.sleep(tm)
+    writer.close()
+    print("\n"+"done")
 
 
-def main(category):
-    print('reptile start')
-    reptile(category)
-    print('>> reptile done.')
+def main():
+    for k in KEY:
+        for c in classes:
+            print('reptile start')
+            reptile(k,c)
+            print('>> reptile done.')
 
 
 def test():
-    for c in classes:
-        #print(c, get_sum(c))
-        main(c)
+    url = 'https://github.com/search?q=smart+contract+wallet&type=repositories&p=101'
+    html = req(url)
+    # print(url)
+    print(html)
+    js=json.loads(html)
+    print(js)
 
 
-# main()
-test()
+main()
+# test()

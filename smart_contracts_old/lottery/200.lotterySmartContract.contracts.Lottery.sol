@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.9;
+
+contract Lottery {
+    address public manager;
+    address payable[] public players;
+
+    constructor() {
+        manager = msg.sender;
+    }
+
+    function enter() public payable {
+        require(msg.value > .01 ether); //it's like an if statement in solidity
+        players.push(payable(msg.sender));
+    }
+
+    function random() private view returns (uint256) {
+        return
+            uint256(
+                keccak256(
+                    abi.encodePacked(block.difficulty, block.timestamp, players)
+                )
+            );
+    }
+
+    function pickWinner() public restricted {
+        uint256 index = random() % players.length;
+        players[index].transfer(address(this).balance); //sends all the money of the contract to the winner
+        players = new address payable[](0); //wanted it to have intial size of 0
+    }
+
+    function getPlayers() public view returns (address payable[] memory) {
+        return players;
+    }
+
+    //sort of a middleware
+    modifier restricted() {
+        require(msg.sender == manager);
+        _; //if this passes the code execution goes down
+    }
+}

@@ -1,28 +1,26 @@
 import os
+import fnmatch
 
-PATH = 'contracts'
+# Specify the directory where you want to search for .sol files
+directory_path = 'contracts'
 OUT = 'sol.log'
 
+# Define the pattern to match .sol files
+pattern = "*.sol"
 
-def find(obj, log):
-    if obj.endswith(".sol"):  # endswith()
-        log.write(str(obj)+'\n')
+# Create an empty list to store the paths of matching files
+sol_file_paths = []
 
+# Walk through the directory and its subdirectories
+for root, dirs, files in os.walk(directory_path):
+    for filename in fnmatch.filter(files, pattern):
+        # Construct the full path to the .sol file
+        sol_file_path = os.path.join(root, filename)
+        # Add the path to the list
+        sol_file_paths.append(sol_file_path)
 
-def print_list_dir(dir_path, log):
-    dir_files = os.listdir(dir_path)  # get file list
-    dir_files.sort()
-    for file in dir_files:
-        file_path = os.path.join(dir_path, file)  # combine path
-        if os.path.isfile(file_path):  # check is file
-            find(file_path, log)
-        if os.path.isdir(file_path):  # traverse directory
-            print_list_dir(file_path, log)
+# Print the list of .sol file paths
+# for path in sol_file_paths:
+#     print(path)
 
-
-def main(path=PATH):
-    l = open(OUT, 'w')
-    print_list_dir(path, l)
-
-
-main(PATH)
+open(OUT,'w').write('\n'.join(sol_file_paths)+'\n')

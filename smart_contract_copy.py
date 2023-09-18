@@ -6,7 +6,10 @@ PATH = 'smart_contracts'
 
 def main():
     with open(LOG, 'r') as f:
+        idx=0
         for line in f:
+            idx+=1
+            print("\r{}/{}".format(idx, '?'), end="")
             line = line.strip()
             word = line.split('/')
             filename = '.'.join(word[2:])

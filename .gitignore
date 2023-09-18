@@ -18,4 +18,4 @@ contracts
 # additional
 bak
 *.html
-test.py
+test.*
